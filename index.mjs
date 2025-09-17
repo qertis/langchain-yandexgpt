@@ -108,7 +108,7 @@ export class LangChainYandexGPT extends ChatYandexGPT {
           return resolve(result);
         }
         setTimeout(() => {
-          return LangChainYandex.checkStatus(id)
+          return this.checkStatus(id)
             .then(resolve)
             .catch(reject);
         }, TIMEOUT);
@@ -118,17 +118,17 @@ export class LangChainYandexGPT extends ChatYandexGPT {
     });
   }
   bindTools(tools) {
-    this.tools = tools;
+    this._tools = tools;
     return this;
   }
   get tools() {
-    return Array.from(this.tools).map(t => {
+    return Array.from(this._tools).map(t => {
       const jsonSchema = zodToJsonSchema(t.schema, 'parameters');
       return {
-        'function': {
-          'name': t.name,
-          'description': t.description,
-          'parameters': jsonSchema.definitions.parameters,
+        function: {
+          name: t.name,
+          description: t.description,
+          parameters: jsonSchema.definitions.parameters,
         }
       };
     })
@@ -145,7 +145,7 @@ export class LangChainYandexGPT extends ChatYandexGPT {
           mode: 'DISABLED',
         },
       },
-      messages: LangChainYandex.parseChatHistory(messages),
+      messages: LangChainYandexGPT.parseChatHistory(messages),
     };
     const { result } = await this.completion(params, options);
     const generations = [];
@@ -161,16 +161,16 @@ export class LangChainYandexGPT extends ChatYandexGPT {
       case 'ALTERNATIVE_STATUS_TOOL_CALLS': {
         generations.push({
           message: new AIMessage({
-            // 'id': 'chatcmpl-9p1Ib4xfxV4yahv2ZWm1IRb1fRVD7', // todo - поддержать
+            // 'id': '', // todo - поддержать
             'content': '',
             'additional_kwargs': {
-              // "tool_calls": [
+              // "tool_calls": [ // todo - поддержать
               //   {
-              //     "id": "call_P5Xgyi0Y7IfisaUmyapZYT7d", // todo - поддержать
+              //     "id": "",
               //     "type": "function",
               //     "function": {
               //       "name": 't.functionCall.name',
-              //       "arguments": JSON.stringify({hello: 'world'})
+              //       "arguments": ...
               //     }
               //   }
               // ],
@@ -180,7 +180,7 @@ export class LangChainYandexGPT extends ChatYandexGPT {
                 'name': t.functionCall.name,
                 'args': t.functionCall.arguments,
                 'type': 'tool_call',
-                // 'id': 'call_P5Xgyi0Y7IfisaUmyapZYT7d' // todo - поддержать
+                // 'id': '' // todo - поддержать
               };
             }),
             'invalid_tool_calls': [],
@@ -189,7 +189,7 @@ export class LangChainYandexGPT extends ChatYandexGPT {
         break;
       }
       default: {
-        console.warn('LangChain Yandex Unknown Status:', result.alternatives[0].status);
+        console.warn('YandexGPT returns unknown status:', result.alternatives[0].status);
         break;
       }
     }
@@ -204,7 +204,7 @@ export class LangChainYandexGPT extends ChatYandexGPT {
           totalTokens: Number(totalTokens),
         },
         // "finish_reason": "tool_calls", // todo - поддержать
-        // "system_fingerprint": "fp_400f27fa1f" // todo - поддержать
+        // "system_fingerprint": "" // todo - поддержать
       },
     };
   }

@@ -11,15 +11,15 @@ npm install langchain-yandexgpt
 ## Example with tool:
 
 ```js
-import { LangChainYandexGPT } from 'langchain-yandexgpt';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { tool } from '@langchain/core/tools';
+import { LangChainYandexGPT } from 'langchain-yandexgpt';
 import { z } from 'zod';
 
-const llm = new LangChainYandex({
+const llm = new LangChainYandexGPT({
   temperature: 0,
-  apiKey: YANDEX.GPT_API_KEY,
-  folderID: YANDEX.GPT_CATALOG,
+  apiKey: YANDEX_GPT_API_KEY,
+  folderID: YANDEX_GPT_CATALOG,
   model: 'yandexgpt-lite',
 });
 
