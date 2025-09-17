@@ -15,27 +15,36 @@ export class LangChainYandexGPT extends ChatYandexGPT {
       if ('content' in message) {
         switch (message._getType()) {
           case 'human': {
-            chatHistory.push({role: 'user', text: message.content});
+            const history = {
+              role: 'user',
+              text: message.content,
+            }
+            chatHistory.push(history);
             break;
           }
           case 'tool': {
-            chatHistory.push({
+            const history = {
               role: 'user',
               toolResultList: {
                 toolResults: [{
-                  'functionResult': {
-                    'name': message.additional_kwargs.name,
-                    'content': message.content,
+                  functionResult: {
+                    name: message.additional_kwargs.name,
+                    content: message.content,
                   },
                 }],
-              }});
+              }
+            }
+            chatHistory.push(history);
             break;
           }
           case 'ai': {
-            chatHistory.push({
+            const history = {
               role: 'assistant',
-              'toolCallList': {
-                'toolCalls': message.tool_calls.map(t => {
+              toolCallList: {},
+            }
+            if (message.tool_calls?.length) {
+              history.toolCallList = {
+                toolCalls: message.tool_calls.map(t => {
                   return {
                     functionCall: {
                       name: t.name,
@@ -44,11 +53,16 @@ export class LangChainYandexGPT extends ChatYandexGPT {
                   };
                 }),
               }
-            });
+            }
+            chatHistory.push(history);
             break;
           }
           case 'system': {
-            chatHistory.push({role: 'system', text: message.content});
+            const history = {
+              role: 'system',
+              text: message.content,
+            }
+            chatHistory.push(history);
             break;
           }
           default: {
@@ -92,8 +106,9 @@ export class LangChainYandexGPT extends ChatYandexGPT {
     }
     return await response.json();
   }
+  // todo: есть бесконечная рекурсия при неудачных запросах
   async checkStatus(id, options) {
-    const TIMEOUT = 1000;
+    const TIMEOUT = 2000;
     return new Promise(async (resolve, reject) => {
       try {
         const response = await fetch('https://operation.api.cloud.yandex.net/operations/' + id, {
@@ -108,7 +123,7 @@ export class LangChainYandexGPT extends ChatYandexGPT {
           return resolve(result);
         }
         setTimeout(() => {
-          return this.checkStatus(id)
+          return this.checkStatus(id, options)
             .then(resolve)
             .catch(reject);
         }, TIMEOUT);
@@ -122,6 +137,9 @@ export class LangChainYandexGPT extends ChatYandexGPT {
     return this;
   }
   get tools() {
+    if (!this._tools) {
+      return [];
+    }
     return Array.from(this._tools).map(t => {
       const jsonSchema = zodToJsonSchema(t.schema, 'parameters');
       return {
@@ -150,7 +168,7 @@ export class LangChainYandexGPT extends ChatYandexGPT {
     const { result } = await this.completion(params, options);
     const generations = [];
 
-    switch (result.alternatives[0].status) {
+    switch (result.alternatives[0]?.status) {
       case 'ALTERNATIVE_STATUS_FINAL': {
         generations.push({
           text: result.alternatives[0].message.text,
@@ -162,9 +180,9 @@ export class LangChainYandexGPT extends ChatYandexGPT {
         generations.push({
           message: new AIMessage({
             // 'id': '', // todo - поддержать
-            'content': '',
-            'additional_kwargs': {
-              // "tool_calls": [ // todo - поддержать
+            content: '',
+            additional_kwargs: {
+              // tool_calls: [ // todo - поддержать
               //   {
               //     "id": "",
               //     "type": "function",
@@ -175,15 +193,15 @@ export class LangChainYandexGPT extends ChatYandexGPT {
               //   }
               // ],
             },
-            'tool_calls': result.alternatives[0].message.toolCallList.toolCalls.map(t => {
+            tool_calls: result.alternatives[0].message.toolCallList.toolCalls.map(t => {
               return {
-                'name': t.functionCall.name,
-                'args': t.functionCall.arguments,
-                'type': 'tool_call',
+                name: t.functionCall.name,
+                args: t.functionCall.arguments,
+                type: 'tool_call',
                 // 'id': '' // todo - поддержать
               };
             }),
-            'invalid_tool_calls': [],
+            invalid_tool_calls: [],
           }),
         });
         break;
