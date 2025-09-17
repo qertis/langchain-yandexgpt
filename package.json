@@ -1,0 +1,35 @@
+{
+  "name": "langchain-yandexgpt",
+  "version": "0.0.1",
+  "description": "LangChain-YandexGPT provides an integration of YandexGPT with LangChain for Node.js",
+  "main": "index.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qertis/langchain-yandexgpt.git"
+  },
+  "author": "Denis Baskovsky",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/qertis/langchain-yandexgpt/issues"
+  },
+  "homepage": "https://github.com/qertis/langchain-yandexgpt#readme",
+  "dependencies": {
+    "@langchain/core": "^0.3.x",
+    "@langchain/yandex": "^0.1.0",
+    "zod-to-json-schema": "^3.x"
+  },
+  "keywords": [
+    "langchain",
+    "yandexgpt",
+    "yandex",
+    "llm",
+    "ai",
+    "nodejs",
+    "chatgpt",
+    "gpt",
+    "tool-calling"
+  ]
+}
