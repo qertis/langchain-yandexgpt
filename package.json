@@ -1,6 +1,6 @@
 {
   "name": "langchain-yandexgpt",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "LangChain-YandexGPT provides an integration of YandexGPT with LangChain for Node.js",
   "main": "index.mjs",
   "scripts": {

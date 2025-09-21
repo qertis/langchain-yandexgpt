@@ -8,14 +8,14 @@ export class LangChainYandexGPT extends ChatYandexGPT {
     const chatHistory = [];
 
     for (const message of history) {
-      if (typeof message.content !== 'string') {
-        throw new Error(
-          'ChatYandexGPT does not support non-string message content.'
-        );
-      }
       if ('content' in message) {
         switch (message._getType()) {
           case 'human': {
+            if (typeof message.content !== 'string') {
+              throw new Error(
+                'ChatYandexGPT does not support non-string message content.'
+              );
+            }
             const history = {
               role: 'user',
               text: message.content,
@@ -24,8 +24,13 @@ export class LangChainYandexGPT extends ChatYandexGPT {
             break;
           }
           case 'tool': {
+            if (typeof message.content !== 'string') {
+              throw new Error(
+                'ChatYandexGPT does not support non-string message content.'
+              );
+            }
             const history = {
-              role: 'user',
+              role: 'assistant',
               toolResultList: {
                 toolResults: [{
                   functionResult: {
@@ -59,6 +64,11 @@ export class LangChainYandexGPT extends ChatYandexGPT {
             break;
           }
           case 'system': {
+            if (typeof message.content !== 'string') {
+              throw new Error(
+                'ChatYandexGPT does not support non-string message content.'
+              );
+            }
             const history = {
               role: 'system',
               text: message.content,
@@ -190,7 +200,6 @@ export class LangChainYandexGPT extends ChatYandexGPT {
         generations.push({
           message: new AIMessage({
             // 'id': '', // todo - поддержать
-            content: '',
             additional_kwargs: {
               // tool_calls: [ // todo - поддержать
               //   {
@@ -231,7 +240,7 @@ export class LangChainYandexGPT extends ChatYandexGPT {
           promptTokens: Number(inputTextTokens),
           totalTokens: Number(totalTokens),
         },
-        // "finish_reason": "tool_calls", // todo - поддержать
+        finish_reason: params.messages.find(m => typeof m.toolResultList === 'object') ? "tool_calls" : undefined,
         // "system_fingerprint": "" // todo - поддержать
       },
     };
