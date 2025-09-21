@@ -6,6 +6,7 @@ import { ZodObject } from 'zod';
 export class LangChainYandexGPT extends ChatYandexGPT {
   static parseChatHistory(history) {
     const chatHistory = [];
+    const pendingToolResults = [];
 
     for (const message of history) {
       if ('content' in message) {
@@ -29,18 +30,10 @@ export class LangChainYandexGPT extends ChatYandexGPT {
                 'ChatYandexGPT does not support non-string message content.'
               );
             }
-            const history = {
-              role: 'assistant',
-              toolResultList: {
-                toolResults: [{
-                  functionResult: {
-                    name: message.additional_kwargs.name,
-                    content: message.content,
-                  },
-                }],
-              }
-            }
-            chatHistory.push(history);
+            pendingToolResults.push({
+              name: message.additional_kwargs.name,
+              content: message.content,
+            });
             break;
           }
           case 'ai': {
@@ -83,6 +76,20 @@ export class LangChainYandexGPT extends ChatYandexGPT {
         }
       }
     }
+    if (pendingToolResults.length > 0) {
+      chatHistory.push({
+        role: 'assistant',
+        toolResultList: {
+          toolResults: pendingToolResults.map(result => ({
+            functionResult: {
+              name: result.name,
+              content: result.content,
+            },
+          })),
+        }
+      });
+    }
+
     return chatHistory;
   }
   async completion(body, options) {
