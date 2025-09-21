@@ -1,6 +1,6 @@
 {
   "name": "langchain-yandexgpt",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "LangChain-YandexGPT provides an integration of YandexGPT with LangChain for Node.js",
   "main": "index.mjs",
   "scripts": {
@@ -20,6 +20,14 @@
     "@langchain/core": "^0.3.x",
     "@langchain/yandex": "^0.1.0",
     "zod-to-json-schema": "^3.x"
+  },
+  "peerDependencies": {
+    "zod": "^3.24.1"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": false
+    }
   },
   "keywords": [
     "langchain",

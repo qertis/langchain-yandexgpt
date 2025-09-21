@@ -1,6 +1,7 @@
 import { AIMessage } from '@langchain/core/messages';
 import { ChatYandexGPT } from '@langchain/yandex';
 import { zodToJsonSchema } from 'zod-to-json-schema';
+import { ZodObject } from 'zod';
 
 export class LangChainYandexGPT extends ChatYandexGPT {
   static parseChatHistory(history) {
@@ -141,12 +142,21 @@ export class LangChainYandexGPT extends ChatYandexGPT {
       return [];
     }
     return Array.from(this._tools).map(t => {
-      const jsonSchema = zodToJsonSchema(t.schema, 'parameters');
+      if (t.schema instanceof ZodObject) {
+        const jsonSchema = zodToJsonSchema(t.schema, 'parameters');
+        return {
+          function: {
+            name: t.name,
+            description: t.description,
+            parameters: jsonSchema.definitions.parameters,
+          }
+        };
+      }
       return {
         function: {
           name: t.name,
           description: t.description,
-          parameters: jsonSchema.definitions.parameters,
+          parameters: t.schema,
         }
       };
     })
