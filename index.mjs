@@ -6,7 +6,8 @@ import { ZodObject } from 'zod';
 export class LangChainYandexGPT extends ChatYandexGPT {
   static parseChatHistory(history) {
     const chatHistory = [];
-    const pendingToolResults = [];
+    let pendingToolResults = [];
+    let awaitingToolCallsCount = 0;
 
     for (const message of history) {
       if ('content' in message) {
@@ -34,6 +35,23 @@ export class LangChainYandexGPT extends ChatYandexGPT {
               name: message.additional_kwargs.name,
               content: message.content,
             });
+
+            // Если накопилось ровно столько результатов, сколько ожидалось от последнего вызова инструментов — сбрасываем их сразу
+            if (awaitingToolCallsCount > 0 && pendingToolResults.length === awaitingToolCallsCount) {
+              chatHistory.push({
+                role: 'assistant',
+                toolResultList: {
+                  toolResults: pendingToolResults.map(result => ({
+                    functionResult: {
+                      name: result.name,
+                      content: result.content,
+                    },
+                  })),
+                },
+              });
+              pendingToolResults = []; // сброс ожидания и накопленных результатов
+              awaitingToolCallsCount = 0;
+            }
             break;
           }
           case 'ai': {
@@ -52,6 +70,8 @@ export class LangChainYandexGPT extends ChatYandexGPT {
                   };
                 }),
               }
+              // запоминаем, сколько результатов ожидается после этого сообщения
+              awaitingToolCallsCount = message.tool_calls.length;
             }
             chatHistory.push(history);
             break;
@@ -76,18 +96,9 @@ export class LangChainYandexGPT extends ChatYandexGPT {
         }
       }
     }
-    if (pendingToolResults.length > 0) {
-      chatHistory.push({
-        role: 'assistant',
-        toolResultList: {
-          toolResults: pendingToolResults.map(result => ({
-            functionResult: {
-              name: result.name,
-              content: result.content,
-            },
-          })),
-        }
-      });
+    // Если после прохода остались несоответствия — сообщаем об ошибке, чтобы не маскировать неверную историю
+    if (pendingToolResults.length > 0 || awaitingToolCallsCount > 0) {
+      throw new Error('Mismatch between requested tool calls and returned tool results in chat history.');
     }
 
     return chatHistory;
