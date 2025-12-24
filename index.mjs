@@ -13,28 +13,36 @@ export class LangChainYandexGPT extends ChatYandexGPT {
       if ('content' in message) {
         switch (message._getType()) {
           case 'human': {
-            if (typeof message.content !== 'string') {
+            if (typeof message.content === 'string') {
+              chatHistory.push({
+                role: 'user',
+                text: message.content,
+              });
+            } else if (Array.isArray(message.content)) {
+              for (const content of message.content) {
+                chatHistory.push({
+                  role: 'user',
+                  text: content.text,
+                });
+              }
+            } else {
               throw new Error(
                 'ChatYandexGPT does not support non-string message content.'
               );
             }
-            const history = {
-              role: 'user',
-              text: message.content,
-            }
-            chatHistory.push(history);
             break;
           }
           case 'tool': {
-            if (typeof message.content !== 'string') {
+            if (typeof message.content === 'string') {
+              pendingToolResults.push({
+                name: message.additional_kwargs.name ?? message.name,
+                content: message.content,
+              });
+            } else {
               throw new Error(
                 'ChatYandexGPT does not support non-string message content.'
               );
             }
-            pendingToolResults.push({
-              name: message.additional_kwargs.name,
-              content: message.content,
-            });
 
             // Если накопилось ровно столько результатов, сколько ожидалось от последнего вызова инструментов — сбрасываем их сразу
             if (awaitingToolCallsCount > 0 && pendingToolResults.length === awaitingToolCallsCount) {
@@ -77,16 +85,23 @@ export class LangChainYandexGPT extends ChatYandexGPT {
             break;
           }
           case 'system': {
-            if (typeof message.content !== 'string') {
+            if (typeof message.content === 'string') {
+              chatHistory.push({
+                role: 'system',
+                text: message.content,
+              });
+            } else if (Array.isArray(message.content)) {
+              for (const content of message.content) {
+                chatHistory.push({
+                  role: 'system',
+                  text: content.text,
+                });
+              }
+            } else {
               throw new Error(
                 'ChatYandexGPT does not support non-string message content.'
               );
             }
-            const history = {
-              role: 'system',
-              text: message.content,
-            }
-            chatHistory.push(history);
             break;
           }
           default: {
@@ -258,8 +273,8 @@ export class LangChainYandexGPT extends ChatYandexGPT {
           promptTokens: Number(inputTextTokens),
           totalTokens: Number(totalTokens),
         },
-        finish_reason: params.messages.find(m => typeof m.toolResultList === 'object') ? "tool_calls" : undefined,
-        // "system_fingerprint": "" // todo - поддержать
+        finish_reason: params.messages.find(m => typeof m.toolResultList === 'object') ? 'tool_calls' : undefined,
+        // system_fingerprint: "" // todo - поддержать
       },
     };
   }
