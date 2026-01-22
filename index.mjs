@@ -193,6 +193,17 @@ export class LangChainYandexGPT extends ChatYandexGPT {
             name: t.name,
             description: t.description,
             parameters: jsonSchema.definitions.parameters,
+            // strict: true,
+          }
+        };
+      }
+      if (t.schema['~standard']) {
+        return {
+          function: {
+            name: t.name,
+            description: t.description,
+            parameters: t.schema._def,
+            // strict: true,
           }
         };
       }
@@ -201,6 +212,7 @@ export class LangChainYandexGPT extends ChatYandexGPT {
           name: t.name,
           description: t.description,
           parameters: t.schema,
+          // strict: true,
         }
       };
     })
