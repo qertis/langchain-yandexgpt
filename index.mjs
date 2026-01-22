@@ -65,7 +65,6 @@ export class LangChainYandexGPT extends ChatYandexGPT {
           case 'ai': {
             const history = {
               role: 'assistant',
-              toolCallList: {},
             }
             if (message.tool_calls?.length) {
               history.toolCallList = {
@@ -80,6 +79,8 @@ export class LangChainYandexGPT extends ChatYandexGPT {
               }
               // запоминаем, сколько результатов ожидается после этого сообщения
               awaitingToolCallsCount = message.tool_calls.length;
+            } else if (typeof message.content === 'string') {
+              history.text = message.content;
             }
             chatHistory.push(history);
             break;
@@ -204,21 +205,15 @@ export class LangChainYandexGPT extends ChatYandexGPT {
       };
     })
   }
-  async _generate(messages, options) {
-    const params = {
-      modelUri: this.modelURI,
-      tools: this.tools,
-      completionOptions: {
-        temperature: this.temperature,
-        maxTokens: this.maxTokens,
-        stream: false,
-        reasoningOptions: {
-          mode: 'DISABLED',
-        },
-      },
-      messages: LangChainYandexGPT.parseChatHistory(messages),
+  _createTokenUsage(result) {
+    const { totalTokens, completionTokens, inputTextTokens } = result.usage;
+    return {
+      completionTokens: Number(completionTokens),
+      promptTokens: Number(inputTextTokens),
+      totalTokens: Number(totalTokens),
     };
-    const { result } = await this.completion(params, options);
+  }
+  _createGenerationMessage(result) {
     const generations = [];
 
     switch (result.alternatives[0]?.status) {
@@ -263,16 +258,33 @@ export class LangChainYandexGPT extends ChatYandexGPT {
         break;
       }
     }
-    const { totalTokens, completionTokens, inputTextTokens } = result.usage;
+    return generations;
+  }
+  async _generate(messages, options) {
+    const params = {
+      modelUri: this.modelURI,
+      tools: this.tools,
+      toolChoice:  {
+        mode: 'AUTO',
+      },
+      completionOptions: {
+        temperature: this.temperature,
+        maxTokens: this.maxTokens,
+        stream: false,
+        reasoningOptions: {
+          mode: 'DISABLED',
+        },
+      },
+      messages: LangChainYandexGPT.parseChatHistory(messages),
+    };
+    const { result } = await this.completion(params, options);
+    const generations = this._createGenerationMessage(result);
+    const tokenUsage = this._createTokenUsage(result);
 
     return {
       generations,
       llmOutput: {
-        tokenUsage: {
-          completionTokens: Number(completionTokens),
-          promptTokens: Number(inputTextTokens),
-          totalTokens: Number(totalTokens),
-        },
+        tokenUsage,
         finish_reason: params.messages.find(m => typeof m.toolResultList === 'object') ? 'tool_calls' : undefined,
         // system_fingerprint: "" // todo - поддержать
       },
